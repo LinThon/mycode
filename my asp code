@@ -114,25 +114,23 @@ Sub WriteToFile(strFile, strContent, blnAppend)
 		Case Else Response.Write Err.Description
 	End Select
 End Sub
-Sub WriteToFile(strFile, strContent, blnAppend)
-	' strFile 文件名(路径) , strContent 写入的内容, blnAppend 是否追加
-	strFile = server.mappath(strFile)
-	On Error Resume Next
-	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
-	If blnAppend Then
-		Set objWriteText = objFSO.OpenTextFile(strFile,8,True)
-	Else
-		Set objWriteText = objFSO.OpenTextFile(strFile,2,True)
-	End If
-	datetime = Year(now)&"-"&right(0&month(now),2)&"-"&right(0&day(now),2)&chr(32)&right(0&hour(now),2)&":"&right(0&minute(now),2)&":"&right(0&second(now),2)
-	objWriteText.WriteLine (datetime&chr(32)&chr(32)&strContent)
-	Set objWriteText = Nothing
-	Set objFSO = Nothing
-	Select Case Err
-		Case 424 Response.Write "no permission"
-		Case Else Response.Write Err.Description
-	End Select
-End 
+function WriteBase64File(fileName, content)
+	Dim xml
+	Set xml=Server.CreateObject("MSXML2.DOMDocument")
+	Dim stm
+	Set stm=Server.CreateObject("ADODB.Stream")
+	Set root = xml.createElement("tif")
+	root.text = content
+	root.dataType = "bin.base64"
+	stm.Type=1
+	stm.Open
+	stm.Write root.nodeTypedValue
+	stm.SaveToFile Server.MapPath(fileName)
+	stm.Close
+	Set root = Nothing
+	Set xml=Nothing
+	Set stm=Nothing
+end function
 function createObj(objectType)
 	select case Lcase(objectType)
 		case "dictionary"
@@ -152,5 +150,32 @@ Function PadNumber(Number, width)
 	Wend
 	PadNumber = padded
 End Function
-
+Function sendMail(sendTo,Subject,body)
+	On Error Resume Next
+	Set Mail = CreateObject("CDO.Message")
+	Mail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2
+	Mail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpserver") ="smtp.gmail.com"
+	Mail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = 465
+	Mail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpusessl") = 1
+	Mail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpconnectiontimeout") = 60
+	Mail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate") = 1
+	Mail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/sendusername") ="noreply@gkash.my"
+	'You can also use you email address that’s setup through google apps.
+	Mail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/sendpassword") ="gkash2018"
+	Mail.Configuration.Fields.Update
+	Mail.Subject=Subject
+	Mail.From="noreply@gkash.my"
+	Mail.To = sendTo
+	Mail.HtmlBody=body
+	Mail.Send
+	Set Mail = Nothing
+End Function
+Function randomNumber(length)
+	Randomize
+	Dim str
+	For i=1 To length
+		str = str&Right(CStr(Int(10*Rnd+1)),1)
+	Next
+	randomNumber =str
+End Function
 
