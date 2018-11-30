@@ -1,0 +1,156 @@
+function getAll(parameters,sql)
+	'on error resume next
+	dim mysql,myparameters,i,keys,items,i_Conn
+	if TypeName(parameters)="Error" then  
+		parameters=""
+	end if
+	if TypeName(sql)<>"Error" then mysql=sql else mysql=""
+	set i_Conn= server.CreateObject ("adodb.connection")
+	set c  = createObj("command")
+	i_Conn.Open Conn
+	c.ActiveConnection = Conn
+	c.CommandType = 1
+	c.commandtext=mysql
+	if typeName(parameters)="Dictionary" then
+		keys = parameters.keys
+		items = parameters.items
+		for i=0 to parameters.count-1
+			c.Parameters.Append c.CreateParameter("@"&keys(i), adVarWChar, adParamInput, 3000 ,items(i))
+		next
+	else
+		if parameters<>"" then
+			c.Parameters.Append c.CreateParameter("@parameter", adVarWChar, adParamInput, 3000 ,parameters)
+		end if
+	end if
+	if lcase(left(trim(sql),6)) = "insert" then
+		c.execute(mysql)
+		mysql = "select SCOPE_IDENTITY() as id"
+		set getAll = i_Conn.execute(mysql)
+	else
+		set getAll = c.execute(mysql)
+	end if
+	
+	set i_Conn = nothing
+end function
+function createObj(objectType)
+	select case Lcase(objectType)
+		case "dictionary"
+			set createObj = Server.CreateObject("Scripting.Dictionary")
+		case  "connection"
+			set createObj = server.CreateObject ("ADODB.Connection")
+		case "recordset"
+			set createObj = server.CreateObject ("ADODB.RecordSet")
+		case "command"
+			set createObj = server.createobject("ADODB.Command")
+	end select
+end function
+function getMemberID(hash)
+	if hash<>"" then
+		dim sql
+		sql = "select memberid from tmemberaccstatus where hash=?"
+		set Rs = getAll(hash,sql)
+		if not Rs.EOF then getMemberID = trim(Rs("memberid")) else getMemberID = "" end if
+	else
+		getMemberID = ""
+	end if
+end function
+
+
+
+Class JSONClass
+	Dim SqlString  
+	Dim JSON 
+	Dim dic
+	Public Function GetJSON ()
+		dim Rs,returnStr,i,oneRecord
+		set Rs = getAll(dic,SqlString)
+		' 生成JSON字符串
+		if    Rs.eof=false and   Rs.Bof=false then
+			returnStr="{ "& JSON &":{"&chr(34)&"records"&chr(34)&":["
+			while Rs.eof=false
+				oneRecord= "{"
+				for i=0 to Rs.Fields.Count -1
+					oneRecord=oneRecord &chr(34) & Rs.Fields(i).Name & chr(34) &":"& chr(34) &Rs.Fields(i).Value&chr(34)&","
+				Next
+				'去除记录最后一个字段后的","
+				oneRecord=left(oneRecord,InStrRev(oneRecord,",")-1)& "},"
+				returnStr=returnStr  & oneRecord
+				Rs.MoveNext
+			Wend
+			' 去除所有记录数组后的","
+			returnStr=left(returnStr,InStrRev(returnStr,",")-1)&"]}}"
+		else
+			response.write("{"&chr(34)&"status"&chr(34)&":400,"&chr(34)&"error_message"&chr(34)&":"&chr(34)&"No Record."&chr(34)&"}" )
+		end if
+		Rs.close
+		set Rs=Nothing
+		GetJSON=returnStr
+   End Function
+End Class
+Function ReplaceHTML(str,patrn, replStr) 
+	Dim regEx, str1 ' 建立变量。 
+	Set regEx = New RegExp ' 建立正则表达式。 
+	regEx.Pattern = patrn ' 设置模式。 
+	regEx.IgnoreCase = True ' 设置是否区分大小写。 
+	ReplaceHTML = regEx.Replace(str, replStr) ' 作替换。 
+End Function
+
+Sub WriteToFile(strFile, strContent, blnAppend)
+	' strFile 文件名(路径) , strContent 写入的内容, blnAppend 是否追加
+	strFile = server.mappath(strFile)
+	On Error Resume Next
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	If blnAppend Then
+		Set objWriteText = objFSO.OpenTextFile(strFile,8,True)
+	Else
+		Set objWriteText = objFSO.OpenTextFile(strFile,2,True)
+	End If
+	'datetime = Year(now)&"-"&right(0&month(now),2)&"-"&right(0&day(now),2)&chr(32)&right(0&hour(now),2)&":"&right(0&minute(now),2)&":"&right(0&second(now),2)
+	objWriteText.WriteLine (strContent)
+	Set objWriteText = Nothing
+	Set objFSO = Nothing
+	Select Case Err
+		Case 424 Response.Write "no permission"
+		Case Else Response.Write Err.Description
+	End Select
+End Sub
+Sub WriteToFile(strFile, strContent, blnAppend)
+	' strFile 文件名(路径) , strContent 写入的内容, blnAppend 是否追加
+	strFile = server.mappath(strFile)
+	On Error Resume Next
+	Set objFSO = Server.CreateObject("Scripting.FileSystemObject")
+	If blnAppend Then
+		Set objWriteText = objFSO.OpenTextFile(strFile,8,True)
+	Else
+		Set objWriteText = objFSO.OpenTextFile(strFile,2,True)
+	End If
+	datetime = Year(now)&"-"&right(0&month(now),2)&"-"&right(0&day(now),2)&chr(32)&right(0&hour(now),2)&":"&right(0&minute(now),2)&":"&right(0&second(now),2)
+	objWriteText.WriteLine (datetime&chr(32)&chr(32)&strContent)
+	Set objWriteText = Nothing
+	Set objFSO = Nothing
+	Select Case Err
+		Case 424 Response.Write "no permission"
+		Case Else Response.Write Err.Description
+	End Select
+End 
+function createObj(objectType)
+	select case Lcase(objectType)
+		case "dictionary"
+			set createObj = Server.CreateObject("Scripting.Dictionary")
+		case  "connection"
+			set createObj = server.CreateObject ("ADODB.Connection")
+		case "recordset"
+			set createObj = server.CreateObject ("ADODB.RecordSet")
+		case "command"
+			set createObj = server.createobject("ADODB.Command")
+	end select
+end function
+Function PadNumber(Number, width)
+	Dim padded : padded = CStr(Number)
+	While (Len(padded) < width)
+	padded    = "0" & padded
+	Wend
+	PadNumber = padded
+End Function
+
+
