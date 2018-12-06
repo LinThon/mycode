@@ -5,7 +5,7 @@ function getAll(parameters,sql)
 		parameters=""
 	end if
 	if TypeName(sql)<>"Error" then mysql=sql else mysql=""
-	set c  = createObj("command")
+	set c  = createObj("cmd")
 	c.ActiveConnection = MLMPConn
 	c.CommandType = 1
 	c.commandtext=mysql
@@ -24,14 +24,38 @@ function getAll(parameters,sql)
 	if keyword = "insert" then
 		c.Execute()
 		c.Parameters.Refresh
-		c.commandtext="select SCOPE_IDENTITY()"
-		getAll = c.execute()(0)
+		c.commandtext="SELECT @@IDENTITY as id"
+		set getAll = createRs("id",c.Execute()("id"))
 	elseif keyword = "update" or keyword = "delete" then
-		c.execute getAll
+		c.Execute count
+		set getAll = createRs("count",count)
 	else
-		set getAll = c.execute()
+		set getAll = c.Execute()
 	end if
 	set c = nothing
+end function
+
+function createRs(names,values)
+	dim Rs,i
+	set Rs = createObj("rs")
+	if typename(names) = "array" then
+		for i=0 to Ubound(names)
+			Rs.Fields.Append names(i),200,100,100
+		next
+	else
+		Rs.Fields.Append names,200,100,100
+	end if
+	Rs.open
+	Rs.addnew
+	if typename(names) = "array" then
+		for i=0 to Ubound(names)
+			Rs(names(i)) = values(i)
+		next
+	else
+		Rs(names) = values
+	end if
+	set createRs = Rs
+	set Rs = nothing
 end function
 function createObj(objectType)
 	select case Lcase(objectType)
