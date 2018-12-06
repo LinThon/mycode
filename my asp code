@@ -20,13 +20,14 @@ function getAll(parameters,sql)
 			c.Parameters.Append c.CreateParameter("@parameter", adVarWChar, adParamInput, 3000 ,parameters)
 		end if
 	end if
-	if lcase(left(trim(mysql),6)) = "insert" then
+	keyword = lcase(left(trim(mysql),6))
+	if keyword = "insert" then
 		c.Execute()
 		c.Parameters.Refresh
-		c.commandtext="select SCOPE_IDENTITY() as id"
-		set getAll = c.execute(mysql)
-	else
-		set getAll = c.execute(mysql)
+		c.commandtext="select SCOPE_IDENTITY()"
+		getAll = c.execute()(0)
+	elseif keyword = "update" or keyword = "delete" then
+		c.execute getAll
 	end if
 	set c = nothing
 end function
