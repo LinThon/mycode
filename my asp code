@@ -1,6 +1,6 @@
 function getAll(parameters,sql)
 	'on error resume next
-	dim mysql,myparameters,i,keys,items,c
+	dim mysql,myparameters,i,keys,items,c,keyword
 	if TypeName(parameters)="Error" then  
 		parameters=""
 	end if
