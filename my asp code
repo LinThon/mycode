@@ -1,14 +1,12 @@
 function getAll(parameters,sql)
 	'on error resume next
-	dim mysql,myparameters,i,keys,items,i_Conn
+	dim mysql,myparameters,i,keys,items,c
 	if TypeName(parameters)="Error" then  
 		parameters=""
 	end if
 	if TypeName(sql)<>"Error" then mysql=sql else mysql=""
-	set i_Conn= server.CreateObject ("adodb.connection")
 	set c  = createObj("command")
-	i_Conn.Open Conn
-	c.ActiveConnection = Conn
+	c.ActiveConnection = MLMPConn
 	c.CommandType = 1
 	c.commandtext=mysql
 	if typeName(parameters)="Dictionary" then
@@ -22,32 +20,39 @@ function getAll(parameters,sql)
 			c.Parameters.Append c.CreateParameter("@parameter", adVarWChar, adParamInput, 3000 ,parameters)
 		end if
 	end if
-	if lcase(left(trim(sql),6)) = "insert" then
-		c.execute(mysql)
-		mysql = "select SCOPE_IDENTITY() as id"
-		set getAll = i_Conn.execute(mysql)
+	if lcase(left(trim(mysql),6)) = "insert" then
+		c.Execute()
+		c.Parameters.Refresh
+		c.commandtext="select SCOPE_IDENTITY() as id"
+		set getAll = c.execute(mysql)
 	else
 		set getAll = c.execute(mysql)
 	end if
-	
-	set i_Conn = nothing
+	set c = nothing
 end function
 function createObj(objectType)
 	select case Lcase(objectType)
 		case "dictionary"
 			set createObj = Server.CreateObject("Scripting.Dictionary")
+		case "dic"
+			set createObj = Server.CreateObject("Scripting.Dictionary")
 		case  "connection"
+			set createObj = server.CreateObject ("ADODB.Connection")
+		case  "conn"
 			set createObj = server.CreateObject ("ADODB.Connection")
 		case "recordset"
 			set createObj = server.CreateObject ("ADODB.RecordSet")
+		case "rs"
+			set createObj = server.CreateObject ("ADODB.RecordSet")
 		case "command"
+			set createObj = server.createobject("ADODB.Command")
+		case "cmd"
 			set createObj = server.createobject("ADODB.Command")
 	end select
 end function
 function getMemberID(hash)
 	if hash<>"" then
-		dim sql
-		sql = "select memberid from tmemberaccstatus where hash=?"
+		dim sql : sql = "select memberid from tmemberaccstatus where hash=?"
 		set Rs = getAll(hash,sql)
 		if not Rs.EOF then getMemberID = trim(Rs("memberid")) else getMemberID = "" end if
 	else
@@ -130,18 +135,6 @@ function WriteBase64File(fileName, content)
 	Set root = Nothing
 	Set xml=Nothing
 	Set stm=Nothing
-end function
-function createObj(objectType)
-	select case Lcase(objectType)
-		case "dictionary"
-			set createObj = Server.CreateObject("Scripting.Dictionary")
-		case  "connection"
-			set createObj = server.CreateObject ("ADODB.Connection")
-		case "recordset"
-			set createObj = server.CreateObject ("ADODB.RecordSet")
-		case "command"
-			set createObj = server.createobject("ADODB.Command")
-	end select
 end function
 Function PadNumber(Number, width)
 	Dim padded : padded = CStr(Number)
