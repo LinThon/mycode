@@ -28,6 +28,8 @@ function getAll(parameters,sql)
 		getAll = c.execute()(0)
 	elseif keyword = "update" or keyword = "delete" then
 		c.execute getAll
+	else
+		set getAll = c.execute()
 	end if
 	set c = nothing
 end function
